@@ -32,6 +32,7 @@
     "prebuild:build:android": "node --run prebuild:build -- --android",
     "prebuild:build:apple": "node --run prebuild:build -- --apple",
     "prebuild:build:all": "node --run prebuild:build -- --android --apple",
+    "prebuild:build:macos": "cmake -S . -B build/macos -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_OSX_ARCHITECTURES=arm64 && cmake --build build/macos --config Release",
     "test": "tsx --test --test-reporter=@reporters/github --test-reporter-destination=stdout --test-reporter=spec --test-reporter-destination=stdout src/node/**/*.test.ts src/node/*.test.ts",
     "test:configure": "cmake -S . -B build-tests -DBUILD_TESTS=ON",
     "test:build": "cmake --build build-tests",

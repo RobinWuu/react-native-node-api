@@ -39,12 +39,16 @@ export function generateHeader(functions: FunctionDecl[]) {
       struct WrappedEnv;
 
       struct WrappedThreadsafeFunction {
+        WrappedThreadsafeFunction(napi_threadsafe_function value, WrappedEnv *env, std::weak_ptr<NodeApiHost> host)
+          : value(value), env(env), host(host) {}
         napi_threadsafe_function value;
         WrappedEnv *env;
         std::weak_ptr<NodeApiHost> host;
       };
 
       struct WrappedAsyncCleanupHookHandle {
+        WrappedAsyncCleanupHookHandle(napi_async_cleanup_hook_handle value, WrappedEnv *env, std::weak_ptr<NodeApiHost> host)
+          : value(value), env(env), host(host) {}
         napi_async_cleanup_hook_handle value;
         WrappedEnv *env;
         std::weak_ptr<NodeApiHost> host;

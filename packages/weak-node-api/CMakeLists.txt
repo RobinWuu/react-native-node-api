@@ -21,6 +21,12 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/js_native_api.h
     ${INCLUDE_DIR}/node_api_types.h
     ${INCLUDE_DIR}/node_api.h
+    # Additional headers from include directory
+    ${INCLUDE_DIR}/napi.h
+    ${INCLUDE_DIR}/napi-inl.h
+    ${INCLUDE_DIR}/napi-inl.deprecated.h
+    ${INCLUDE_DIR}/weak_napi_defines.h
+    ${INCLUDE_DIR}/weak_napi_undefs.h
 )
 
 get_target_property(PUBLIC_HEADER_FILES ${PROJECT_NAME} HEADER_SET)

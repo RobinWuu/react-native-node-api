@@ -170,4 +170,38 @@ TEST_CASE("NodeApiMultiHost") {
       REQUIRE(calls == 2);
     }
   }
+
+  SECTION("how to get wrapped env in napi_callback") {
+    // Create and inject a multi-host, then wrap two envs
+    NodeApiMultiHost multi_host{nullptr, nullptr};
+    inject_weak_node_api_host(multi_host);
+
+    auto host_foo = std::shared_ptr<NodeApiHost>(new NodeApiHost{
+        .napi_create_function =
+            [](napi_env env, const char* utf8name, size_t length, napi_callback cb,
+              void* callback_data, napi_value* result) -> napi_status {
+          // This is the specific implementation of napi_create_function in various engines, such as hermes, PrimJS, V8, JSC
+          // Here, a engine-specific callback is registered with the JS engine. When a user calls the JS function from the JS side, this callback is triggered. Then, napi_callback is triggered within this callback.
+          // When triggering the execution of napi_callback, napi_env needs to be passed. Usually, in the implementation of each engine, raw_env is passed. However, with raw_env, users cannot call weak-node-api's API 
+          // within napi_callback. If we pass wrapped env, we need to be able to get wrapped env here, which would couple the engine implementation with weak-node-api.
+          // For example, here is primjs's napi_create_function implementation code: https://github.com/lynx-family/primjs/blob/develop/src/napi/quickjs/js_native_api_QuickJS.cc#L661
+          
+          return napi_ok;
+        }});
+
+    // Original napi_env
+    napi_env raw_env{};
+    // foo_env is a WrappedEnv
+    auto foo_env = multi_host.wrap(napi_env{}, host_foo);
+
+    napi_callback foo_cb = [](napi_env env, napi_callback_info info) -> napi_value {
+      // This `env` is not the WrappedEnv foo_env, but the original napi_env raw_env.
+      // Therefore, cannot directly call weak-node-api functions here because napi_env is not a wrapped env.
+      // We also cannot try to get the host from napi_callback_info, as users are not aware of the internal implementation details of weak-node-api.
+      return nullptr;
+    };
+
+    napi_value foo_fn = nullptr;
+    napi_create_function(foo_env, "foo", 3, foo_cb, nullptr, &foo_fn);
+  }
 }

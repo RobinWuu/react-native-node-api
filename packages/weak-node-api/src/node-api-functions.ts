@@ -82,6 +82,7 @@ export type FunctionDecl = {
   returnType: string;
   noReturn: boolean;
   argumentTypes: string[];
+  needEnv: boolean;
   libraryPath: string;
   fallbackReturnStatement: string;
 };
@@ -127,14 +128,22 @@ export function getNodeApiFunctions(version: NodeApiVersion = "v8") {
         `Expected return type to be napi_status, got ${returnType}`,
       );
 
+      const argTypes = argumentTypes
+        .split(",")
+        .map((arg) => arg.trim().replace("_Bool", "bool"));
+      
+      // Check if the first parameter is napi_env or node_api_basic_env
+      const needEnv = argTypes.length > 0 && 
+        (argTypes[0].includes("napi_env") || 
+         argTypes[0].includes("node_api_basic_env"));
+      
       nodeApiFunctions.push({
         name,
         returnType,
         noReturn: node.type.qualType.includes("__attribute__((noreturn))"),
         kind: engineSymbols.has(name) ? "engine" : "runtime",
-        argumentTypes: argumentTypes
-          .split(",")
-          .map((arg) => arg.trim().replace("_Bool", "bool")),
+        argumentTypes: argTypes,
+        needEnv,
         // Defer to the right library
         libraryPath: engineSymbols.has(name)
           ? "libhermes.so"

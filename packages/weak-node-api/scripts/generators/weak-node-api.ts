@@ -11,22 +11,26 @@ export function generateHeader() {
     
     #include "NodeApiHost.hpp"
     
+    typedef NodeApiHost* (*NodeApiHostGetter)(node_api_basic_env env);
+    extern "C" void inject_weak_node_api_host_getter(NodeApiHostGetter host_getter);
+
     typedef void(*InjectHostFunction)(const NodeApiHost&);
     extern "C" void inject_weak_node_api_host(const NodeApiHost& host);
   `;
 }
 
 function generateFunctionImpl(fn: FunctionDecl) {
-  const { name, returnType, argumentTypes } = fn;
+  const { name, returnType, argumentTypes, needEnv } = fn;
   return generateFunction({
     ...fn,
     extern: true,
     body: `
-        if (g_host.${name} == nullptr) {
+        NodeApiHost* host = g_host_getter(${needEnv ? "arg0" : "nullptr"});
+        if (host->${name} == nullptr) {
           fprintf(stderr, "Node-API function '${name}' called before it was injected!\\n");
           abort();
         }
-        ${returnType === "void" ? "" : "return "} g_host.${name}(
+        ${returnType === "void" ? "" : "return "} host->${name}(
           ${argumentTypes.map((_, index) => `arg${index}`).join(", ")}
         );
       `,
@@ -44,6 +48,11 @@ export function generateSource(functions: FunctionDecl[]) {
      * It is set via inject_weak_node_api_host() before any Node-API function is dispatched.
      * All Node-API calls are routed through this host.
      */
+
+    NodeApiHostGetter g_host_getter;
+
+    void inject_weak_node_api_host_getter(NodeApiHostGetter host_getter) { g_host_getter = host_getter; };
+
     NodeApiHost g_host;
     void inject_weak_node_api_host(const NodeApiHost& host) {
       g_host = host;
